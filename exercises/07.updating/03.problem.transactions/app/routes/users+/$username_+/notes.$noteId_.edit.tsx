@@ -145,44 +145,36 @@ export async function action({ request, params }: DataFunctionArgs) {
 
 	const { title, content, imageUpdates = [], newImages = [] } = submission.value
 
-	// 🐨 start the transaction here
-
-	// 🐨 change this prisma to the transactional client
-	await prisma.note.update({
-		select: { id: true },
-		where: { id: params.noteId },
-		data: { title, content },
-	})
-
-	// 🐨 change this prisma to the transactional client
-	await prisma.noteImage.deleteMany({
-		where: {
-			id: { notIn: imageUpdates.map(i => i.id) },
-			noteId: params.noteId,
-		},
-	})
-
-	for (const updates of imageUpdates) {
-		// 🐨 change this prisma to the transactional client
-		await prisma.noteImage.update({
+	prisma.$transaction(async $prisma => {
+		await $prisma.note.update({
 			select: { id: true },
-			where: { id: updates.id },
-			data: { ...updates, id: updates.blob ? cuid() : updates.id },
+			where: { id: params.noteId },
+			data: { title, content },
 		})
-	}
 
-	for (const newImage of newImages) {
-		// 🐨 change this prisma to the transactional client
-		await prisma.noteImage.create({
-			select: { id: true },
-			data: { ...newImage, noteId: params.noteId },
+		await $prisma.noteImage.deleteMany({
+			where: {
+				id: { notIn: imageUpdates.map(i => i.id) },
+				noteId: params.noteId,
+			},
 		})
-	}
 
-	// 🦉 uncomment this to test out the transaction rollback
-	// throw new Error('Gotcha 🧝‍♂️, https://kcd.im/promises')
+		for (const updates of imageUpdates) {
+			await $prisma.noteImage.update({
+				select: { id: true },
+				where: { id: updates.id },
+				data: { ...updates, id: updates.blob ? cuid() : updates.id },
+			})
+		}
 
-	// 🐨 finish the transaction here
+		for (const newImage of newImages) {
+			await $prisma.noteImage.create({
+				select: { id: true },
+				data: { ...newImage, noteId: params.noteId! },
+			})
+		}
+		throw new Error('Gotcha 🧝‍♂️, https://kcd.im/promises')
+	})
 
 	return redirect(`/users/${params.username}/notes/${params.noteId}`)
 }

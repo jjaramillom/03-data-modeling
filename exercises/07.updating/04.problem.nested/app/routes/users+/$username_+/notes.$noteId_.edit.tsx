@@ -151,10 +151,18 @@ export async function action({ request, params }: DataFunctionArgs) {
 		data: {
 			title,
 			content,
-			// 🐨 add images here and inline all three of the other calls here:
-			// deleteMany: https://www.prisma.io/docs/reference/api-reference/prisma-client-reference#deletemany-1
-			// updateMany: https://www.prisma.io/docs/reference/api-reference/prisma-client-reference#updatemany
-			// create: https://www.prisma.io/docs/reference/api-reference/prisma-client-reference#create
+			images: {
+				deleteMany: {
+					id: {
+						notIn: imageUpdates.map(i => i.id),
+					},
+				},
+				update: imageUpdates.map(i => ({
+					where: { id: i.id },
+					data: { ...i, id: i.blob ? cuid() : i.id },
+				})),
+				create: newImages.map(i => ({ ...i, noteId: params.noteId })),
+			},
 		},
 	})
 
