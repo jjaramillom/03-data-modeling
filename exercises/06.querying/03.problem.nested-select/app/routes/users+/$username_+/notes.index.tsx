@@ -20,7 +20,7 @@ export const meta: MetaFunction<
 	// 🐨 update this to get the notes off the owner
 	// 🦺 ISN'T IT AWESOME THAT TYPESCRIPT KNEW YOU NEEDED TO UPDATE THIS!?!?
 	// 🦉 yes... yes it is, Lily.
-	const noteCount = notesMatch?.data?.notes.length ?? 0
+	const noteCount = notesMatch?.data?.owner.notes.length ?? 0
 	const notesText = noteCount === 1 ? 'note' : 'notes'
 	return [
 		{ title: `${displayName}'s Notes | Epic Notes` },

@@ -3,18 +3,23 @@ import { Link, useLoaderData, type MetaFunction } from '@remix-run/react'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Spacer } from '#app/components/spacer.tsx'
 import { Button } from '#app/components/ui/button.tsx'
-// 🐨 swap "db" for "prisma"
-import { db } from '#app/utils/db.server.ts'
+import { prisma } from '#app/utils/db.server.ts'
 import { getUserImgSrc, invariantResponse } from '#app/utils/misc.tsx'
 
 export async function loader({ params }: DataFunctionArgs) {
-	// 🐨 delete this query for one using prisma
-	// 🐨 make sure to use `select` to only get the fields we care about.
-	const user = db.user.findFirst({
+	const user = await prisma.user.findFirst({
 		where: {
-			username: {
-				equals: params.username,
+			username: params.username,
+		},
+		select: {
+			name: true,
+			username: true,
+			image: {
+				select: {
+					id: true,
+				},
 			},
+			createdAt: true,
 		},
 	})
 
@@ -23,12 +28,7 @@ export async function loader({ params }: DataFunctionArgs) {
 	// 🐨 you can just return the user here since we're selecting just the bits
 	// that matter in the query above.
 	return json({
-		user: {
-			name: user.name,
-			username: user.username,
-			image: user.image ? { id: user.image.id } : undefined,
-		},
-		// 🦉 we still want to keep this
+		user,
 		userJoinedDisplay: new Date(user.createdAt).toLocaleDateString(),
 	})
 }
