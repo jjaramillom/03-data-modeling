@@ -93,28 +93,37 @@ async function seed() {
 		),
 	)
 
-	// 🐨 we have a totalUsers variable. I'd like you to wrap this
-	// prisma.user.create call in a loop for that many times.
-	await prisma.user.create({
-		data: {
-			...createUser(),
-			// 🐨 add a random userImage here (💰 you can use userImages[index % 10])
-			notes: {
-				// 🐨 change this hard-coded array for a random number of notes (0-3 maybe)
-				create: [
-					{
-						title: faker.lorem.sentence(),
-						content: faker.lorem.paragraphs(),
-						// 🐨 add a random number of random images to the notes (0-3)
+	Promise.all(
+		Array.from({ length: totalUsers }).map(async (_, i) =>
+			prisma.user.create({
+				data: {
+					...createUser(),
+					image: { create: userImages[i % 10] },
+					notes: {
+						create: Array.from({
+							length: faker.number.int({ min: 0, max: 3 }),
+						}).map(() => ({
+							title: faker.lorem.sentence(),
+							content: faker.lorem.paragraphs(),
+							images: {
+								create: Array.from({
+									length: Math.floor(faker.number.int({ min: 0, max: 3 })),
+								}).map(
+									() =>
+										noteImages[
+											Math.floor(
+												faker.number.int({ min: 0, max: noteImages.length }),
+											)
+										],
+								),
+							},
+						})),
 					},
-					{
-						title: faker.lorem.sentence(),
-						content: faker.lorem.paragraphs(),
-					},
-				],
-			},
-		},
-	})
+				},
+			}),
+		),
+	)
+
 	console.timeEnd(`👤 Created ${totalUsers} users...`)
 
 	console.time(`🐨 Created user "kody"`)
@@ -157,7 +166,9 @@ async function seed() {
 			email: 'kody@kcd.dev',
 			username: 'kody',
 			name: 'Kody',
-			// 🐨 add Kody's profile image here (💰 kodyImages.kodyUser)
+			image: {
+				create: kodyImages.kodyUser,
+			},
 			notes: {
 				create: [
 					{
@@ -165,24 +176,10 @@ async function seed() {
 						title: 'Basic Koala Facts',
 						content:
 							'Koalas are found in the eucalyptus forests of eastern Australia. They have grey fur with a cream-coloured chest, and strong, clawed feet, perfect for living in the branches of trees!',
-						// 🐨 swap these hard-coded images for the ones in kodyImages
 						images: {
-							create: [
-								{
-									altText: 'an adorable koala cartoon illustration',
-									contentType: 'image/png',
-									blob: await fs.promises.readFile(
-										'./tests/fixtures/images/kody-notes/cute-koala.png',
-									),
-								},
-								{
-									altText: 'a cartoon illustration of a koala in a tree eating',
-									contentType: 'image/png',
-									blob: await fs.promises.readFile(
-										'./tests/fixtures/images/kody-notes/koala-eating.png',
-									),
-								},
-							],
+							create: Object.entries(kodyImages)
+								.filter(([key]) => key !== 'kodyUser')
+								.map(([, value]) => value),
 						},
 					},
 				],
@@ -202,9 +199,3 @@ seed()
 	.finally(async () => {
 		await prisma.$disconnect()
 	})
-
-// 💣 you can remove this when you're done with this step if you like
-/*
-eslint
-	@typescript-eslint/no-unused-vars: "off",
-*/

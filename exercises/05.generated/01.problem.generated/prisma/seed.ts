@@ -1,32 +1,22 @@
 import fs from 'node:fs'
-// 💰 import { faker } from '@faker-js/faker'
+import { faker } from '@faker-js/faker'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 await prisma.user.deleteMany()
 
-// 🐨 create a new fake user with completely randomly generated data.
-// They should have two notes. Don't worry about images just yet.
-// 💰 You'll use these helpers:
-// - faker.internet.email
-// - faker.internet.userName
-// - faker.person.fullName
-// - faker.lorem.sentence
-// - faker.lorem.paragraphs
-
 await prisma.user.create({
 	data: {
-		email: 'kody@kcd.dev',
-		username: 'kody',
-		name: 'Kody',
+		email: faker.internet.email(),
+		username: faker.internet.userName(),
+		name: faker.person.fullName(),
 		notes: {
 			create: [
 				{
 					id: 'd27a197e',
-					title: 'Basic Koala Facts',
-					content:
-						'Koalas are found in the eucalyptus forests of eastern Australia. They have grey fur with a cream-coloured chest, and strong, clawed feet, perfect for living in the branches of trees!',
+					title: faker.lorem.sentence(),
+					content: faker.lorem.paragraph(),
 					images: {
 						create: [
 							{

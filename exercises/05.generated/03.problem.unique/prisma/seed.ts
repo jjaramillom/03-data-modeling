@@ -1,28 +1,26 @@
 import fs from 'node:fs'
 import { faker } from '@faker-js/faker'
 import { PrismaClient } from '@prisma/client'
-// 💰 import { UniqueEnforcer } from 'enforce-unique'
+import { UniqueEnforcer } from 'enforce-unique'
 import { promiseHash } from 'remix-utils/promise'
 
 const prisma = new PrismaClient()
 
-// 🐨 create a unique username enforcer here
+const uniqueEnforcer = new UniqueEnforcer()
 
 export function createUser() {
-	const firstName = faker.person.firstName()
-	const lastName = faker.person.lastName()
-
-	// 🐨 use the unique username enforcer here
-	// 💯 you might add a tiny bit of random alphanumeric characters to the start
-	// of the username to reduce the chance of collisions.
-	const username = faker.internet.userName({
-		firstName: firstName.toLowerCase(),
-		lastName: lastName.toLowerCase(),
-	})
-	// 🐨 transform the username to only be the first 20 characters
-	// 💰 you can use .slice(0, 20) for this
-	// 🐨 turn the username to lowercase
-	// 🐨 replace any non-alphanumeric characters with an underscore
+	const firstName = uniqueEnforcer.enforce(faker.person.firstName())
+	const lastName = uniqueEnforcer.enforce(faker.person.lastName())
+	const username = uniqueEnforcer
+		.enforce(
+			faker.internet.userName({
+				firstName: firstName.toLowerCase(),
+				lastName: lastName.toLowerCase(),
+			}),
+		)
+		.slice(0, 20)
+		.toLowerCase()
+		.replace(/[^a-z0-9]/g, '_')
 	return {
 		username,
 		name: `${firstName} ${lastName}`,
@@ -126,10 +124,7 @@ async function seed() {
 					})),
 				},
 			},
-		})
-		// 💯 add a catch here that logs an error, but doesn't throw
-		// with generated seed data it's really not critical to stop the process
-		// just because a few users' generated data had a unique constraint violation
+		}).catch(err=> console.error(err))
 	}
 	console.timeEnd(`👤 Created ${totalUsers} users...`)
 
