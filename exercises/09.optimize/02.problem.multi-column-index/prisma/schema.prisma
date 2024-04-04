@@ -36,6 +36,9 @@ model Note {
 
   images NoteImage[]
 
+  // Index for quicker lookups by owner and last updated time.
+  @@index([ownerId, updatedAt])
+
   // 🐨 add an index for the ownerId and updatedAt here and add a comment.
   // 🦉 most indexes should be accompanied by a comment explaining why they exist.
 

@@ -36,7 +36,7 @@ model Note {
 
   images NoteImage[]
 
-  // 🐨 add an index for the ownerId here
+  @@index([ownerId])
 }
 
 model NoteImage {
@@ -51,7 +51,7 @@ model NoteImage {
   note   Note   @relation(fields: [noteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   noteId String
 
-  // 🐨 add an index for the noteId here
+  @@index([noteId])
 }
 
 model UserImage {
