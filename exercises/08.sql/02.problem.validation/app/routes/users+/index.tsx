@@ -1,5 +1,6 @@
 import { json, redirect, type DataFunctionArgs } from '@remix-run/node'
 import { Link, useLoaderData } from '@remix-run/react'
+import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { SearchBar } from '#app/components/search-bar.tsx'
 import { prisma } from '#app/utils/db.server.ts'
@@ -7,6 +8,14 @@ import { cn, getUserImgSrc, useDelayedIsPending } from '#app/utils/misc.tsx'
 
 // 🐨 add a new schema here for the search results. Each entry should have an
 // id, username, and (nullable) name
+
+const UserSearchResultSchema = z.array(
+	z.object({
+		id: z.string(),
+		username: z.string(),
+		name: z.string().nullable(),
+	}),
+)
 
 export async function loader({ request }: DataFunctionArgs) {
 	const searchTerm = new URL(request.url).searchParams.get('search')
@@ -16,7 +25,7 @@ export async function loader({ request }: DataFunctionArgs) {
 
 	const like = `%${searchTerm ?? ''}%`
 	// 🐨 rename this to "rawUsers"
-	const users = await prisma.$queryRaw`
+	const rawUsers = await prisma.$queryRaw`
 		SELECT id, username, name
 		FROM User
 		WHERE username LIKE ${like}
@@ -24,11 +33,15 @@ export async function loader({ request }: DataFunctionArgs) {
 		LIMIT 50
 	`
 
-	// 🐨 use your new schema to safely parse the rawUsers.
-	//   If there's an error, then return json with the error (result.error.message)
-	//   If there is not an error, then return json with the users
+	const result = UserSearchResultSchema.safeParse(rawUsers)
 
-	return json({ status: 'idle', users } as const)
+	if (!result.success) {
+		throw json({ status: 'error', error: result.error.message } as const, {
+			status: 500,
+		})
+	}
+
+	return json({ status: 'idle', users: result.data } as const)
 }
 
 export default function UsersRoute() {
@@ -51,7 +64,6 @@ export default function UsersRoute() {
 			</div>
 			<main>
 				{data.status === 'idle' ? (
-					// @ts-expect-error 💣 remove this now
 					data.users.length ? (
 						<ul
 							className={cn(
@@ -59,7 +71,6 @@ export default function UsersRoute() {
 								{ 'opacity-50': isPending },
 							)}
 						>
-							{/* @ts-expect-error 💣 remove this now */}
 							{data.users.map(user => (
 								<li key={user.id}>
 									<Link

@@ -29,7 +29,14 @@ export async function loader({ request }: DataFunctionArgs) {
 		LEFT JOIN UserImage ON UserImage.userId = User.id
 		WHERE User.username LIKE ${like}
 		OR User.name LIKE ${like}
-		-- 🐨 add a nested ORDER BY query here
+		ORDER BY
+		(
+			SELECT updatedAt 
+			FROM Note
+			WHERE Note.ownerId = User.id
+			ORDER BY updatedAt DESC
+			LIMIT 1
+		) DESC
 		LIMIT 50
 	`
 
